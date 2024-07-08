@@ -1,0 +1,17 @@
+DATA: directory(30).
+*
+*SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME.
+DATA: p_file TYPE localfile.
+*SELECTION-SCREEN END OF BLOCK b1.
+*
+*INITIALIZATION.
+*
+*AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_file.
+CALL FUNCTION '/SAPDMC/LSM_F4_SERVER_FILE'
+  EXPORTING
+    directory        = directory
+  IMPORTING
+    serverfile       = p_file
+  EXCEPTIONS
+    canceled_by_user = 1
+    OTHERS           = 2.
