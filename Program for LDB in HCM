@@ -1,0 +1,143 @@
+TABLES: pernr.
+DATA: it_res   TYPE TABLE OF payde_result with HEADER LINE, "Result structure for the country dectuche.
+      it_rgdir TYPE table of  pc261,                  "Control records
+      ls_rgdir TYPE pc261,
+      it_rt    TYPE TABLE OF pc207,          "payroll Results
+      ls_RT    TYPE pc207,
+      lv_seqnr TYPE pc261-seqnr,             "Seqno
+      lv_cl_id TYPE relid_pcl.               "Cluster_ID
+
+INITIALIZATION.
+
+AT SELECTION-SCREEN.
+
+START-OF-SELECTION.
+  PERFORM get_rgdir.            "All Control Records
+  PERFORM get_seqnr.             "Seqno
+  PERFORM get_cluster_id.        "Cluster_id.
+  PERFORM read_payroll.          "Read Payroll Result.
+  PERFORM display_result.
+
+END-OF-SELECTION.
+
+
+FORM get_rgdir .
+
+CALL FUNCTION 'CU_READ_RGDIR'
+  EXPORTING
+    persnr                   = pernr-pernr
+*   BUFFER                   =
+*   NO_AUTHORITY_CHECK       = ' '
+* IMPORTING
+*   MOLGA                    =
+  tables
+    in_rgdir                 = it_rgdir.
+* EXCEPTIONS
+*   NO_RECORD_FOUND          = 1
+*   OTHERS                   = 2
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+
+ENDFORM.
+
+
+
+
+FORM get_seqnr .
+
+  DATA: pn_begda TYPE pay_date.
+  DATA: pn_endda TYPE pay_date.
+
+  CALL FUNCTION 'CD_READ_LAST'
+    EXPORTING
+      begin_date = pn_begda
+      end_date   = pn_endda
+    IMPORTING
+      out_seqnr  = lv_seqnr
+    TABLES
+      rgdir      = it_rgdir
+*   EXCEPTIONS
+*     NO_RECORD_FOUND       = 1
+*     OTHERS     = 2
+    .
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+
+ENDFORM.
+
+
+FORM get_cluster_id .
+
+  CALL FUNCTION 'PYXX_GET_RELID_FROM_PERNR'
+    EXPORTING
+      employee                          = pernr-pernr
+   IMPORTING
+     RELID                             = lv_cl_id
+*     MOLGA                             =
+*   EXCEPTIONS
+*     ERROR_READING_INFOTYPE_0001       = 1
+*     ERROR_READING_MOLGA               = 2
+*     ERROR_READING_RELID               = 3
+*     OTHERS                            = 4
+            .
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+
+ENDFORM.
+
+
+
+
+FORM read_payroll .
+CALL FUNCTION 'PYXX_READ_PAYROLL_RESULT'
+  EXPORTING
+   CLUSTERID                          = lv_cl_id
+    employeenumber                     =  pernr-pernr
+    sequencenumber                     = lv_seqnr
+*   READ_ONLY_BUFFER                   = ' '
+*   READ_ONLY_INTERNATIONAL            = ' '
+*   ARC_GROUP                          = ' '
+*   CHECK_READ_AUTHORITY               = 'X'
+*   FILTER_CUMULATIONS                 = 'X'
+*   CLIENT                             =
+* IMPORTING
+*   VERSION_NUMBER_PAYVN               =
+*   VERSION_NUMBER_PCL2                =
+  CHANGING
+    payroll_result                     = it_res
+* EXCEPTIONS
+*   ILLEGAL_ISOCODE_OR_CLUSTERID       = 1
+*   ERROR_GENERATING_IMPORT            = 2
+*   IMPORT_MISMATCH_ERROR              = 3
+*   SUBPOOL_DIR_FULL                   = 4
+*   NO_READ_AUTHORITY                  = 5
+*   NO_RECORD_FOUND                    = 6
+*   VERSIONS_DO_NOT_MATCH              = 7
+*   ERROR_READING_ARCHIVE              = 8
+*   ERROR_READING_RELID                = 9
+*   OTHERS                             = 10
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+ENDFORM.
+
+
+FORM display_result .
+
+  LOOP AT it_res-inter-rt INTO ls_rt.
+
+    WRITE: pernr-pernr, ls_rt-lgart, ls_rt-betrg.
+
+  ENDLOOP.
+
+ENDFORM.
+
