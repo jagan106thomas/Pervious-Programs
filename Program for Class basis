@@ -1,0 +1,32 @@
+CLASS class_3 DEFINITION.
+  PUBLIC SECTION.
+    METHODS get_material IMPORTING VALUE(im_mtype)  TYPE mtart
+                                   im_plant         TYPE werks_d OPTIONAL
+                         EXPORTING VALUE(ex_ntgew)  TYPE ntgew
+                         CHANGING  VALUE(ch_ntgew)  TYPE ntgew
+                         RETURNING VALUE(rt_sucess) TYPE char10.
+ENDCLASS.
+
+CLASS class_3 IMPLEMENTATION.
+
+  METHOD get_material.
+    SELECT SINGLE ntgew FROM mara INTO @ex_ntgew WHERE mtart = @im_mtype.
+    rt_sucess = 'X'.
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+  DATA(obj) = NEW class_3( ).
+  DATA result TYPE ntgew VALUE 100.
+  obj->get_material(
+  EXPORTING
+    im_mtype = 'FERT'
+    IMPORTING
+      ex_ntgew = DATA(lv_ntgew)
+      CHANGING
+        ch_ntgew = result
+        RECEIVING
+        rt_sucess = DATA(lv_sucess)
+      ).
+  WRITE: lv_ntgew,result,lv_sucess.
