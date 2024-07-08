@@ -1,0 +1,38 @@
+TABLES: ekko.
+
+TOP-OF-PAGE.
+
+  WRITE / 'Page Details'.
+
+  DATA: lv_bukrs TYPE ekko-bukrs.
+
+  PARAMETERS p_bukrs TYPE ekko-bukrs.
+
+  SELECT-OPTIONS s_bukrs FOR lv_bukrs.
+
+LOAD-OF-PROGRAM.
+
+  WRITE / 'Load of program'.
+
+INITIALIZATION.
+
+  p_bukrs = '5000'.
+
+  s_bukrs-sign = 'I'.
+  s_bukrs-option = 'BT'.
+  s_bukrs-low = '1020'.
+  s_bukrs-high = '1050'.
+
+
+AT SELECTION-SCREEN OUTPUT.
+
+  LOOP AT SCREEN.
+    IF screen-name = 's_bukrs-low'.
+      screen-input = 0.
+    ENDIF.
+    MODIFY SCREEN.
+  ENDLOOP.
+
+END-OF-PAGE.
+
+  WRITE / 'End of Page'.
