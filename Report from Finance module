@@ -1,0 +1,30 @@
+*&---------------------------------------------------------------------*
+*& Report ZYNY_BSEG_REPORT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zyny_bseg_report.
+
+** FROM BSEG TABLE
+DATA : it_bseg TYPE TABLE OF bseg,
+       wa_bseg LIKE LINE OF it_bseg.
+
+FIELD-SYMBOLS : <fs_it_bseg> TYPE bseg.
+
+** FROM ZYNY_BSEG TABLE
+DATA : lt_bseg TYPE TABLE OF zyny_bseg,
+       ls_bseg LIKE LINE OF lt_bseg.
+
+FIELD-SYMBOLS : <fs_bseg> TYPE zyny_bseg.
+
+SELECT * FROM bseg INTO TABLE it_bseg.
+
+SELECT * FROM zyny_bseg INTO TABLE lt_bseg.
+
+LOOP AT it_bseg ASSIGNING <fs_it_bseg>.
+  IF <fs_it_bseg>-mwskz IS NOT INITIAL.
+  WRITE : / <fs_it_bseg>-mwskz, ' ', <fs_it_bseg>-H_blart.
+  ENDIF.
+*  if <FS_BSEG>-blart = 'RY' OR <FS_BSEG>-blart = 'IH' OR  <FS_BSEG>-blart = 'RV'.
+*  ENDIF.
+ENDLOOP.
