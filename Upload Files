@@ -1,0 +1,77 @@
+*&---------------------------------------------------------------------*
+*& Report YJAGA_DESKTOP_UPLOAD
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT YJAGA_DESKTOP_UPLOAD.
+
+
+   TYPES: BEGIN OF iy_data,
+        ones type string,
+       END OF iy_data.
+
+DATA: it_data TYPE TABLE OF iy_data,
+      wa_data LIKE it_data.
+
+PARAMETERS: p_file TYPE localfile." DEFAULT 'C:\Users\jagan\Videos\SAP\Sap Abap Training\Testing.txt'.
+
+INITIALIZATION.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_file.
+  CALL FUNCTION 'F4_FILENAME'
+    EXPORTING
+      program_name  = syst-cprog
+      dynpro_number = syst-dynnr
+      field_name    = 'p_file'
+    IMPORTING
+      file_name     = p_file.
+
+  DATA c_file TYPE rlgrap-filename.
+  c_file = p_file.
+  DATA:s_file TYPE string.
+  s_file = p_file.
+
+*  BREAK-POINT.
+
+  DATA:lv_file       TYPE rlgrap-filename,
+       lv_csv_format TYPE truxs_t_text_data.
+
+  CALL FUNCTION 'GUI_UPLOAD'
+    EXPORTING
+      filename = s_file
+      filetype = 'ASC'
+*     has_field_separator = ';'
+    TABLES
+      data_tab = it_data.
+
+  cl_demo_output=>display( it_data ).
+
+  CALL FUNCTION 'SAP_CONVERT_TO_CSV_FORMAT'
+    EXPORTING
+      i_field_seperator    = ';'
+*     I_LINE_HEADER        =
+*     I_FILENAME           =
+*     I_APPL_KEEP          = ' '
+    TABLES
+      i_tab_sap_data       = it_data
+    CHANGING
+      i_tab_converted_data = lv_csv_format
+*                  EXCEPTIONS
+*     CONVERSION_FAILED    = 1
+*     OTHERS               = 2
+    .
+
+BREAK-POINT.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+*  BREAK-POINT.
+  lv_file = '/tmp/PO1.txt'.
+
+  OPEN DATASET lv_file FOR OUTPUT IN TEXT MODE ENCODING DEFAULT .
+  LOOP AT lv_csv_format INTO DATA(ls_t001).
+
+    TRANSFER ls_t001 TO lv_file.
+  ENDLOOP.
+
+  CLOSE DATASET lv_file.
