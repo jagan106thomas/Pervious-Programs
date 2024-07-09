@@ -1,0 +1,45 @@
+*&---------------------------------------------------------------------*
+*& Report Y_SCREEN
+*&---------------------------------------------------------------------*
+REPORT y_screen.
+
+NODES: pernr.
+
+TABLES: pa0002.
+
+INFOTYPES: 0001, 0002.
+
+START-OF-SELECTION.
+
+GET pernr.
+
+  DATA: t_tab TYPE STANDARD TABLE OF pa0002 WITH HEADER LINE,
+        w_tab TYPE pa0002.
+
+  w_tab-pernr = pernr-pernr.
+
+  SELECT SINGLE pernr, begda, endda, vorna FROM pa0002  INTO CORRESPONDING FIELDS OF @w_tab WHERE pernr = @pernr-pernr.
+
+  DATA: f_name TYPE rs38l_fnam.
+
+  CALL FUNCTION 'SSF_FUNCTION_MODULE_NAME'
+    EXPORTING
+      formname           = 'ZRVORDER01'
+    IMPORTING
+      fm_name            = f_name
+    EXCEPTIONS
+      no_form            = 1
+      no_function_module = 2
+      OTHERS             = 3.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+
+CALL FUNCTION f_name
+  EXPORTING
+    w_tab                      = w_tab
+          .
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
