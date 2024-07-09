@@ -1,0 +1,93 @@
+*&---------------------------------------------------------------------*
+*& Report ZYNY_PRATHAMESH_EMAIL
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zyny_prathamesh_email.
+
+*write CL_ABAP_CHAR_UTILITIES=>NEWLINE.
+
+DATA: lv_subject    TYPE so_obj_des VALUE 'Email Functionality Demo',
+      lv_sender     TYPE ad_smtpadr VALUE 'SenderEmail@gmail.com',
+      lv_line1      TYPE tdobname,
+      it_email_body TYPE bcsy_text, " Add email body
+      it_receivers  TYPE bcsy_smtpa. " Contains receives email address (Can be multiple)
+
+DATA: obj_docu           TYPE REF TO cl_document_bcs,
+      obj_sender         TYPE REF TO if_sender_bcs,
+      obj_receivers      TYPE REF TO if_recipient_bcs,
+      obj_sender_request TYPE REF TO cl_bcs.
+
+DATA : WA_EMAIL_BODY TYPE SOLI.
+
+*
+lv_line1 = 'ZEMAIL_LINE1'.
+*write: lv_line1.
+
+it_email_body = VALUE #( ( line = lv_line1 )
+*                         ( line = cl_abap_char_utilities=>newline )
+                         ( line = 'This is test email to uderstand email functionality in SAP.' ) ).
+
+
+it_receivers = VALUE #( ( 'receiver1@gmail.com' )
+                        ( 'receiver2@gmail.com' ) ).
+
+" calling class & methods to send above decalrations
+
+TRY.
+
+*  TRY.
+    obj_docu = cl_document_bcs=>create_document(     " contains email body, subject
+     EXPORTING
+        i_type         = 'HTM'
+        i_text         = it_email_body
+        i_subject      = lv_subject ).
+
+* set sender
+
+*TRY.
+    obj_sender = cl_cam_address_bcs=>create_internet_address(
+      EXPORTING
+        i_address_string = lv_sender ).
+
+* Request
+    obj_sender_request = cl_bcs=>create_persistent( ).
+
+    CALL METHOD obj_sender_request->set_sender
+      EXPORTING
+        i_sender = obj_sender.
+
+    CALL METHOD obj_sender_request->set_document
+      EXPORTING
+        i_document = obj_docu.
+
+* set receiver
+
+    LOOP AT it_receivers INTO DATA(wa_receivers).
+
+      obj_receivers = cl_cam_address_bcs=>create_internet_address(
+        EXPORTING
+          i_address_string = wa_receivers ).
+
+      CALL METHOD obj_sender_request->add_recipient
+        EXPORTING
+          i_recipient = obj_receivers
+          i_express   = 'X'.
+
+    ENDLOOP.
+
+* Push/send the email
+
+
+    CALL METHOD obj_sender_request->send
+      EXPORTING
+        i_with_error_screen = 'X'
+      RECEIVING
+        result              = DATA(lv_send).
+
+    COMMIT WORK.
+
+  CATCH cx_bcs INTO DATA(obj_exception).
+
+
+ENDTRY.
