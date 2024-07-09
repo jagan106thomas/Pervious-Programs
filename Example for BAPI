@@ -1,0 +1,20 @@
+REPORT ZTEST_BAPI.
+DATA:
+lv_headerinfo	 TYPE BAPIPLNHDR, "
+lt_indexstructure	 TYPE STANDARD TABLE OF BAPIACPSTRU, "
+lt_coobject	 TYPE STANDARD TABLE OF BAPIPCPOBJ, "
+lt_pervalue	 TYPE STANDARD TABLE OF BAPIPCPVAL, "
+lt_totvalue	 TYPE STANDARD TABLE OF BAPIPCPTOT, "
+lt_contrl	 TYPE STANDARD TABLE OF BAPIPCPCTRL, "
+lt_return	 TYPE STANDARD TABLE OF BAPIRET2. "
+
+  CALL FUNCTION 'BAPI_COSTACTPLN_READPRIMCOST'  "Primary Cost Planning: Read
+    EXPORTING
+          HEADERINFO  = lv_headerinfo
+    TABLES
+          INDEXSTRUCTURE  = lt_indexstructure
+          COOBJECT  = lt_coobject
+          PERVALUE  = lt_pervalue
+          TOTVALUE  = lt_totvalue
+          CONTRL  = lt_contrl
+          RETURN  = lt_return
