@@ -1,0 +1,77 @@
+*&---------------------------------------------------------------------*
+*& Report ZTESTFM
+*&---------------------------------------------------------------------*
+REPORT ztestfm.
+
+TYPES: BEGIN OF ty_nbtc_mat_txt,
+         id       TYPE thead-tdid,
+         language TYPE thead-tdspras,
+         name     TYPE thead-tdname,
+         objec    TYPE thead-tdobject,
+       END OF ty_nbtc_mat_txt.
+
+DATA: it_mat_txt TYPE TABLE OF tline,
+      wa_mat_txt TYPE ty_nbtc_mat_txt.
+
+DATA: ids  TYPE thead-tdid VALUE '0001',
+      lang TYPE thead-tdspras VALUE 'EN',
+      nam  TYPE thead-tdname VALUE '0000000008000010'.
+
+TYPES: BEGIN OF ty_txt,
+         tdline   TYPE string,
+                END OF ty_txt.
+
+DATA:lt_tline  TYPE STANDARD TABLE OF tline,
+     wa_header TYPE ty_txt,
+     ld_header LIKE thead.
+
+CALL FUNCTION 'READ_TEXT'
+  EXPORTING
+*   CLIENT                  = SY-MANDT
+    id                      = ids
+    language                = lang
+    name                    = nam
+    object                  = 'VBBP'
+*   ARCHIVE_HANDLE          = 0
+*   LOCAL_CAT               = ' '
+*   USE_OLD_PERSISTENCE     = ABAP_FALSE
+  IMPORTING
+    header                  = ld_header
+*   OLD_LINE_COUNTER        =
+  TABLES
+    lines                   = it_mat_txt
+  EXCEPTIONS
+    id                      = 1
+    language                = 2
+    name                    = 3
+    not_found               = 4
+    object                  = 5
+    reference_check         = 6
+    wrong_access_to_archive = 7
+    OTHERS                  = 8.
+
+*BREAK-POINT.
+
+IF sy-subrc = 0.
+* Implement suitable error handling here
+  LOOP AT it_mat_txt INTO DATA(ls_tline_wa).
+    REPLACE ALL OCCURRENCES OF '<(>&<)>' IN ls_tline_wa WITH '&'.
+    IF wa_header-tdline IS INITIAL.
+      wa_header-tdline = ls_tline_wa-tdline.
+    ELSE.
+      wa_header-tdline = |{ wa_header-tdline } { ls_tline_wa-tdline }|.
+    ENDIF.
+*  ENDIF.
+
+  ENDLOOP.
+ENDIF.
+*         wa_header-arktx = wa_vbak-arktx. " Project Details   "Commented by DEV_NBTC
+DATA: str TYPE string.
+str = wa_header-tdline.
+
+CALL FUNCTION '/1BCDWB/SF00000007'
+  EXPORTING
+    it_txt = str.
+IF sy-subrc <> 0.
+* Implement suitable error handling here
+ENDIF.
