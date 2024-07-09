@@ -1,0 +1,93 @@
+*&---------------------------------------------------------------------*
+*& Report ZTEST11
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZTEST11.
+**
+**TYPES: BEGIN OF ts_rbkp,
+**        belnr TYPE rbkp-belnr,
+**        gjahr TYPE rbkp-gjahr,
+**        blart TYPE rbkp-blart,
+**        usnam TYPE rbkp-usnam,
+**        cputm TYPE rbkp-cputm,
+**        bukrs TYPE rbkp-bukrs,
+**      END OF ts_rbkp.
+**
+**DATA : IT_RBKP TYPE STANDARD TABLE OF TS_RBKP,
+**       WA_RBKP TYPE TS_RBKP.
+
+
+DATA: lt_vbrk TYPE TABLE OF vbrk,
+      lt_vbrp TYPE TABLE OF vbrp,
+      lt_xml  TYPE TABLE OF string,
+      lv_file_path TYPE string.
+
+PARAMETERS: p_folder TYPE string DEFAULT 'C:\SAP\Invoices\'.
+
+START-OF-SELECTION.
+  " Step 1: Retrieve invoice data
+  SELECT * FROM vbrk INTO TABLE lt_vbrk WHERE fkdat = sy-datum.
+  SELECT * FROM vbrp INTO TABLE lt_vbrp FOR ALL ENTRIES IN lt_vbrk WHERE vbeln = lt_vbrk-vbeln.
+
+  " Step 2: Create XML content
+  APPEND '<?xml version="1.0" encoding="UTF-8"?>' TO lt_xml.
+  APPEND '<Invoices>' TO lt_xml.
+
+  LOOP AT lt_vbrk INTO DATA(ls_vbrk).
+    APPEND '<Invoice>' TO lt_xml.
+    APPEND |<BillingDocument>{ ls_vbrk-vbeln }</BillingDocument>| TO lt_xml.
+    APPEND |<BillingDate>{ ls_vbrk-fkdat }</BillingDate>| TO lt_xml.
+    APPEND '<Items>' TO lt_xml.
+
+    LOOP AT lt_vbrp INTO DATA(ls_vbrp) WHERE vbeln = ls_vbrk-vbeln.
+      APPEND '<Item>' TO lt_xml.
+      APPEND |<Material>{ ls_vbrp-matnr }</Material>| TO lt_xml.
+      APPEND |<Quantity>{ ls_vbrp-fkimg }</Quantity>| TO lt_xml.
+      APPEND '</Item>' TO lt_xml.
+    ENDLOOP.
+
+    APPEND '</Items>' TO lt_xml.
+    APPEND '</Invoice>' TO lt_xml.
+  ENDLOOP.
+
+  APPEND '</Invoices>' TO lt_xml.
+
+  " Step 3: Download XML to specific folder
+  lv_file_path = p_folder && 'Invoices_' && sy-datum && '.xml'.
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+      filename                = lv_file_path
+      filetype                = 'ASC'
+    TABLES
+      data_tab                = lt_xml
+    EXCEPTIONS
+      file_write_error        = 1
+      no_batch                = 2
+      gui_refuse_filetransfer = 3
+      invalid_type            = 4
+      no_authority            = 5
+      unknown_error           = 6
+      header_not_allowed      = 7
+      separator_not_allowed   = 8
+      filesize_not_allowed    = 9
+      header_too_long         = 10
+      dp_error_create         = 11
+      dp_error_send           = 12
+      dp_error_write          = 13
+      unknown_dp_error        = 14
+      access_denied           = 15
+      dp_out_of_memory        = 16
+      disk_full               = 17
+      dp_timeout              = 18
+      file_not_found          = 19
+      dataprovider_exception  = 20
+      control_flush_error     = 21
+      OTHERS                  = 22.
+
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  ELSE.
+    MESSAGE 'File downloaded successfully' TYPE 'S'.
+  ENDIF.
