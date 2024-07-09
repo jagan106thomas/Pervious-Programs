@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Report ZTRANS_CODE
+*&---------------------------------------------------------------------*
+REPORT ztrans_code.
+
+TYPES: BEGIN OF ty_t001,
+         bukrs TYPE t001-bukrs,
+         butxt TYPE t001-butxt,
+         ort01 TYPE t001-ort01,
+         land1 TYPE t001-land1,
+       END OF ty_t001.
+
+DATA: wa_t001 TYPE ty_t001,
+      it_t001 TYPE TABLE OF ty_t001.
+
+SELECT-OPTIONS s_bukrs FOR wa_t001-bukrs.
+
+SELECT bukrs,
+  butxt,
+  ort01,
+  land1
+  FROM t001 INTO TABLE @it_t001 WHERE bukrs IN @s_bukrs.
+
+WRITE:/ sy-uline.
+WRITE:/ sy-vline, 'CCode' , sy-vline, 10 'Company Name', sy-vline, 25 'City', sy-vline, 35 'Country' ,45 sy-vline.
+WRITE:/ sy-uline.
+LOOP AT it_t001 INTO wa_t001.
+  WRITE:/ sy-vline.
+    WRITE:/10 wa_t001-bukrs,
+              wa_t001-butxt,
+              wa_t001-ort01,
+              wa_t001-land1.
+    WRITE:/ sy-vline.
+  ENDLOOP.
+  WRITE:/ sy-uline(70).
