@@ -1,0 +1,70 @@
+*&---------------------------------------------------------------------*
+*& Report ZPOLYMORPHISM
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPOLYMORPHISM.
+
+class poly definition.  " Declares a class named poly with a data attribute message and a method display.
+  public section.
+  data: message type string.
+  methods:display.
+  endclass.
+
+  class poly implementation. " Implements the methods of the class poly. The display method sets a message and writes it to the output.
+    method:display.
+      message = ' i am using polymorphism'.
+      write : message color  3 intensified off.
+      endmethod.
+    endclass.
+
+    class poly1 definition inheriting from poly. "Declares a class named poly1 that inherits from poly. It redefines the display method
+      public section.
+      methods display redefinition.
+      endclass.
+
+     class poly1 implementation. "Implements the redefined display method for the class poly1.
+    method:display.
+      message = ' i am using polymorphism child class'.
+      write : message color  6 intensified off.
+      endmethod.
+    endclass.
+
+    class polychild definition inheriting from poly. " Declares a class named polychild that inherits from poly. It also redefines the display method.
+      public section.
+      methods:display redefinition.
+      endclass.
+
+        class polychild  implementation." Implements the redefined display method for the class polychild.
+     method:display.
+      message = ' i am using  child class'.
+      write : message color  4 intensified off.
+      endmethod.
+    endclass.
+
+    start-of-selection.  "beginning of the executable part of the program.
+    write:'poly class section'.
+    uline.  " Outputs a header and underlines it to separate sections.
+
+    skip.
+        data:obj type ref to poly.  "Declares a reference variable obj of type poly.
+        create object obj."Creates an object of class poly and assigns it to obj.
+        call method obj->display.   "Calls the display method of the object obj. The same structure is repeated for poly1 and polychild classes with objects obj1 and obj2 respectively.
+    skip.
+
+    uline.
+    write:'poly1 class section'.
+    uline.
+
+    skip.
+    data:obj1 type ref to poly1.
+         create object obj1.
+         call method obj1->display.
+    skip.
+    skip.
+    uline.
+    write:'child class section'.
+    skip.
+    data:obj2 type ref to polychild.
+       create object obj2.
+       call method obj2->display.
