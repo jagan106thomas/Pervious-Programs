@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Report ZSATISH_HANA4
+*&---------------------------------------------------------------------*
+REPORT zsatish_hana4.
+
+*TYPES: ty_mara TYPE TABLE OF mara.
+*SELECT matnr, mtart FROM mara INTO TABLE @DATA(it_material) up to 1000 rows.
+*  data: it_mara type table of mara.
+*it_mara = VALUE #( ( matnr = '124'  mtart = 'FERT')
+*( matnr = '125'  mtart = 'ZOHG' )
+*( matnr = '127'  mtart = 'POKL' )
+* ).
+*
+*it_mara = value #( for ls_material in it_material where ( mtart = 'ROH' )
+*( matnr = ls_material-matnr mtart = ls_material-mtart ) ).
+*cl_demo_output=>display( it_mara ).
+
+TYPES: BEGIN OF ty_final,
+         vbeln TYPE vbeln_va,
+         audat TYPE audat,
+         kunnr TYPE kunnr,
+         name1 TYPE name1,
+       END OF ty_final.
+
+*DATA: it_final TYPE TABLE OF ty_final.
+TYPES: ty TYPE TABLE OF ty_final WITH EMPTY KEY.
+
+SELECT vbeln,audat, kunnr FROM vbak INTO TABLE @DATA(it_vbak).
+IF it_vbak IS NOT INITIAL.
+  SELECT kunnr, name1 FROM kna1 INTO TABLE @DATA(it_knal) FOR ALL ENTRIES IN @it_vbak WHERE kunnr = @it_vbak-kunnr.
+ENDIF.
+
+DATA(it_final) = VALUE ty( FOR ls_vbak IN it_vbak
+                      FOR ls_kna1 IN it_knal WHERE ( kunnr = ls_vbak-kunnr ) ( vbeln = ls_vbak-vbeln audat = ls_vbak-audat name1 = ls_kna1-name1 ) ).
+cl_demo_output=>display( it_final ).
