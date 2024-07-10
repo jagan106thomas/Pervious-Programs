@@ -1,0 +1,61 @@
+*&---------------------------------------------------------------------*
+*& Report ZNAM_TEST_XML
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZNAM_TEST_XML.
+DATA xml_content_table TYPE TABLE OF string.
+DATA xml_content_line  TYPE string.
+DATA orders_in_xml     TYPE string.
+DATA imported_orders   TYPE zAVIorder_ttype.
+DATA order             TYPE zAVIorder.
+DATA orderitem         TYPE zAVIorderitem.
+
+FIELD-SYMBOLS <order>     LIKE LINE OF imported_orders.
+FIELD-SYMBOLS <orderitem> LIKE LINE OF <order>-orderitems.
+"$. Endregion Data Declaration
+
+"$. Region Upload XML content to a simple string internal table
+CALL FUNCTION 'GUI_UPLOAD'
+  EXPORTING
+    filename = 'C:/Users/Namrata.G/orders.xml'
+  TABLES
+    data_tab = xml_content_table.
+"$. Endregion Upload XML content to a simple string internal table
+
+"$. Region Converting string internal table to a simple flat string
+LOOP AT xml_content_table INTO xml_content_line.
+  CONCATENATE orders_in_xml xml_content_line INTO orders_in_xml.
+ENDLOOP.
+"$. Endregion Converting string internal table to a simple flat string
+
+"$. Region Parsing flat string to deep structure
+CALL TRANSFORMATION zorderS
+  SOURCE XML orders_in_xml
+  RESULT orders = imported_orders.
+"$. Endregion Parsing flat string to deep structure
+
+"$. Region Extract data from deep structure and insert into database
+LOOP AT imported_orders ASSIGNING <order>.
+  CLEAR order.
+
+  MOVE-CORRESPONDING <order> TO order.
+  INSERT zAVIorder FROM order.
+
+  IF sy-subrc <> 0.
+    " error handling
+  ENDIF.
+
+  LOOP AT <order>-orderitems ASSIGNING <orderitem>.
+    CLEAR orderitem.
+
+    MOVE-CORRESPONDING <orderitem> TO orderitem.
+    orderitem-orderid = <order>-orderid.
+
+    INSERT zAVIorderitem FROM orderitem.
+
+    IF sy-subrc <> 0.
+      " error handling
+    ENDIF.
+  ENDLOOP.
+ENDLOOP.
