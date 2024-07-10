@@ -1,0 +1,75 @@
+*&---------------------------------------------------------------------*
+*& Report ZSEQ8
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zseq8.
+
+
+DATA: lv_file_path       TYPE string,
+      lt_file_content_wa TYPE   bapi_incinv_create_item,
+      lt_file_header_wa  LIKE    bapi_incinv_create_header,
+      lt_file_header     TYPE STANDARD TABLE OF bapi_incinv_create_header,
+      lt_file_content    TYPE STANDARD TABLE OF bapi_incinv_create_item.
+lv_file_path = '/tmp/File1.txt'.   "* Specify the path of the text file on the application server
+
+OPEN DATASET lv_file_path FOR INPUT IN TEXT MODE ENCODING DEFAULT.   "Open the dataset for reading
+IF sy-subrc = 0.
+*  LOOP AT lt_file_content.
+  DO 2 TIMES.
+    IF sy-index = 0.
+      READ DATASET lv_file_path INTO lt_file_header_wa.
+      APPEND lt_file_header_wa TO lt_file_header.
+      CLEAR lt_file_header_wa.
+    ELSE.
+      READ DATASET lv_file_path INTO lt_file_content_wa.
+      APPEND lt_file_content_wa TO lt_file_content.
+      CLEAR lt_file_content_wa.
+*    IF sy-subrc = 0.
+*      WRITE: / lt_file_content.
+*      MESSAGE 'Success' TYPE 'S'.
+    ENDIF.
+  ENDDO.
+  CLOSE DATASET lv_file_path.    "Close the dataset after reading
+*ELSE.
+*   Handle error when opening the dataset
+*  WRITE: 'Error opening the file:', lv_file_path.
+ENDIF.
+
+DATA: g_invno LIKE bapi_incinv_fld-inv_doc_no.
+DATA: it_ret LIKE bapiret2 OCCURS 0 WITH HEADER LINE.
+CALL FUNCTION 'BAPI_INCOMINGINVOICE_CREATE'
+  EXPORTING
+    headerdata = lt_file_header
+*   ADDRESSDATA               =
+* IMPORTING
+*   INVOICEDOCNUMBER          =
+*   FISCALYEAR =
+  TABLES
+        itemdata   = lt_file_content
+*   ACCOUNTINGDATA            =
+*   GLACCOUNTDATA             =
+*   MATERIALDATA              =
+*   TAXDATA    =
+*   WITHTAXDATA               =
+*   VENDORITEMSPLITDATA       =
+    return     = it_ret
+*   EXTENSIONIN               =
+*   TM_ITEMDATA               =
+*   NFMETALLITMS              =
+*   ASSETDATA  =
+  .
+
+IF g_invno IS NOT INITIAL.
+  CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+*   EXPORTING
+*     WAIT          =
+*   IMPORTING
+*     RETURN        =
+    .
+ENDIF.
+WRITE:/1 g_invno. " g_fyear.
+
+LOOP AT it_ret.
+  WRITE:/1 it_ret-message.
+ENDLOOP.
