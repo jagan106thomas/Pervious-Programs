@@ -1,0 +1,38 @@
+*&---------------------------------------------------------------------*
+*& Report ZSATISH_PERFORMANCE_2
+*&---------------------------------------------------------------------*
+REPORT zsatish_performance_2.
+
+TYPES: BEGIN OF ty_final,
+         vbeln TYPE vbeln_va,
+         audat TYPE audat,
+         kunnr TYPE kunnr,
+         name1 TYPE name1,
+       END OF ty_final.
+
+DATA it_final TYPE TABLE OF ty_final.
+
+SELECT vbeln, audat, kunnr FROM vbak INTO TABLE @DATA(it_vbak).
+IF it_vbak IS NOT INITIAL.
+  SELECT kunnr, name1 FROM kna1 INTO TABLE @DATA(it_kna1) FOR ALL ENTRIES IN @it_vbak WHERE kunnr = @it_vbak-kunnr.
+ENDIF.
+
+it_final = VALUE #( FOR ls_vbak IN it_vbak
+                    FOR ls_kna1 IN it_kna1 WHERE ( kunnr = ls_vbak-kunnr )
+                        ( vbeln = ls_vbak-vbeln audat = ls_vbak-audat  name1 = ls_kna1-name1 )
+                         ).
+
+DATA(ls_vbak1) = VALUE #( it_vbak[ kunnr = '0017100009' ] OPTIONAL ) .
+ASSIGN it_vbak[ kunnr = '0017100009' ] TO FIELD-SYMBOL(<fs_vbak>).
+
+IF line_exists( it_vbak[ kunnr = '0017100009' ] ).
+  WRITE:/ 'Line Found'.
+  DATA(line_tab) = sy-tabix.
+  DATA(line_index) = line_index( it_vbak[ kunnr = '0017100009' ] ).
+  SELECT SINGLE @abap_true FROM vbak INTO @DATA(lv_kunnr) WHERE kunnr = '0017100009'.
+ENDIF.
+*BREAK-POINT.
+
+LOOP AT it_vbak ASSIGNING FIELD-SYMBOL(<fs_so>).
+  WRITE: <fs_so>-vbeln.
+ENDLOOP.
