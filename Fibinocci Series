@@ -1,0 +1,81 @@
+*&---------------------------------------------------------------------*
+*& Report ZSTRING_TEST6
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZSTRING_TEST6.
+
+*PARAMETERS: p_n TYPE i.
+*
+*DATA: lv_n TYPE i,
+*      lv_result TYPE i.
+*
+*START-OF-SELECTION.
+*
+*  lv_n = p_n. " Get the value of n from the user
+*
+*  PERFORM fibonacci USING lv_n CHANGING lv_result.
+*  WRITE: / 'The Fibonacci number for', lv_n, 'is', lv_result.
+*
+*FORM fibonacci USING iv_n TYPE i CHANGING cv_result TYPE i.
+*  DATA: lv_a TYPE i VALUE 0,
+*        lv_b TYPE i VALUE 1,
+*        lv_c TYPE i,
+*        lv_i TYPE i.
+*
+*  IF iv_n = 0.
+*    cv_result = lv_a.
+*  ELSEIF iv_n = 1.
+*    cv_result = lv_b.
+*  ELSE.
+*    DO iv_n - 1 TIMES.
+*      lv_c = lv_a + lv_b.
+*      lv_a = lv_b.
+*      lv_b = lv_c.
+*    ENDDO.
+*
+*    cv_result = lv_b.
+*  ENDIF.
+*ENDFORM.
+*
+PARAMETERS: p_n TYPE i.
+
+if p_n > 50.
+MESSAGE 'The number should be less than 50.' type 'I'.
+
+else.
+
+  DATA: lv_n TYPE i,
+      lv_result TYPE int8.
+
+
+
+  lv_n = p_n. " Get the value of n from the user
+
+  PERFORM fibonacci USING lv_n CHANGING lv_result.
+  WRITE: / 'The', lv_n, 'th Fibonacci number is', lv_result.
+
+
+
+endif.
+
+FORM fibonacci USING iv_n TYPE i CHANGING cv_result TYPE int8.
+  DATA: lv_a TYPE int8 VALUE 0,
+        lv_b TYPE int8 VALUE 1,
+        lv_c TYPE int8,
+        lv_i TYPE i.
+
+  IF iv_n = 0.
+    cv_result = lv_a.
+  ELSEIF iv_n = 1.
+    cv_result = lv_b.
+  ELSE.
+    DO iv_n - 1 TIMES.
+      lv_c = lv_a + lv_b.
+      lv_a = lv_b.
+      lv_b = lv_c.
+    ENDDO.
+
+    cv_result = lv_b.
+  ENDIF.
+ENDFORM.
