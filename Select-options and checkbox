@@ -1,0 +1,40 @@
+*&---------------------------------------------------------------------*
+*& Report ZPROGRAM5_SELECTION_SCREEN
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZPROGRAM5_SELECTION_SCREEN.
+
+DATA : V1 TYPE VBAK-VBELN.
+
+SELECTION-SCREEN : BEGIN OF BLOCK A1 WITH FRAME.
+
+   SELECT-OPTIONS : S_VBELN FOR V1.
+   PARAMETERS : P_DIS AS CHECKBOX.
+   PARAMETERS : P_RANGE AS CHECKBOX.
+
+SELECTION-SCREEN :END OF BLOCK A1.
+
+INITIALIZATION.
+
+ S_VBELN-SIGN = 'I'.
+ S_VBELN-OPTION = 'BT'.
+ S_VBELN-LOW = '2468'.
+ S_VBELN-HIGH = '2499'.
+ APPEND S_VBELN.
+ CLEAR S_VBELN.
+
+ S_VBELN-SIGN = 'I'.
+ S_VBELN-OPTION = 'BT'.
+ S_VBELN-LOW = '2434'.
+ S_VBELN-HIGH = '2490'.
+ APPEND S_VBELN.
+ CLEAR S_VBELN.
+
+ S_VBELN-SIGN = 'I'.
+ S_VBELN-OPTION = 'BT'.
+ S_VBELN-LOW = '2445'.
+ S_VBELN-HIGH = '2465'.
+ APPEND S_VBELN.
+ CLEAR S_VBELN.
+ P_DIS = 'X'.
