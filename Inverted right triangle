@@ -1,0 +1,49 @@
+*&---------------------------------------------------------------------*
+*& Report ZSTRING_TEST3
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZSTRING_TEST3.
+
+PARAMETERS: n TYPE i DEFAULT 5.
+
+DATA: lv_row TYPE i,
+      lv_column TYPE i.
+
+* Print reverse right-angle triangle with spaces on the left (corrected)
+DO n TIMES.
+  lv_row = n - sy-index + 1. " Current row number
+
+  " Print spaces on the left
+  DO n - lv_row TIMES.
+    WRITE ' '.
+  ENDDO.
+
+  " Print asterisks for the current row
+  DO lv_row TIMES.
+    WRITE '*'.
+  ENDDO.
+
+  " Move to the next line
+  WRITE: /.
+ENDDO.
+
+*PARAMETERS: p_height TYPE i DEFAULT 5.
+*
+*DATA: lv_row TYPE i,
+*      lv_column TYPE i,
+*      space type c value ' '.
+*
+** Print reverse right-angle triangle with spaces on the left (alternative approach 2)
+*DO p_height TIMES.
+*  lv_row = p_height - sy-index + 1. " Current row number
+*
+*  " Print asterisks for the current row
+*  DO lv_row TIMES.
+*    WRITE '*'.
+*  ENDDO.
+*
+*  " Print spaces on the left
+*  WRITE: / sy-index , space .
+*
+*ENDDO.
