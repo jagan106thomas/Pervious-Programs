@@ -1,0 +1,67 @@
+*&---------------------------------------------------------------------*
+*& Report ZSTRING_TEST4
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZSTRING_TEST4.
+PARAMETERS: p_start TYPE i,
+            p_end TYPE i.
+
+START-OF-SELECTION.
+  DATA: lv_number TYPE i,
+        lv_sum TYPE i,
+        lv_temp TYPE i,
+        lv_digit TYPE i,
+        lv_count TYPE i,
+        lv_found TYPE c.
+
+  lv_number = p_start. " Initialize the starting number
+  lv_found = 'N'. " Initialize flag to 'No' (N)
+
+  WRITE: / 'Armstrong Numbers between ', p_start, ' and ', p_end, ':'.
+
+  DO.
+    lv_temp = lv_number.
+    lv_sum = 0.
+    lv_count = 0.
+
+    " Convert the number to a string to count the digits
+    DATA(lv_number_str) = lv_temp.
+
+    " Calculate the number of digits in the number
+    DO.
+      lv_count = lv_count + 1.
+      lv_temp = lv_temp / 10.
+      IF lv_temp = 0.
+        EXIT.
+      ENDIF.
+    ENDDO.
+
+    lv_temp = lv_number.
+
+    " Calculate the sum of digits each raised to the power of the number of digits
+    DO.
+      lv_digit = lv_temp MOD 10.
+      lv_sum = lv_sum + lv_digit ** lv_count.
+      lv_temp = lv_temp / 10.
+      IF lv_temp = 0.
+        EXIT.
+      ENDIF.
+    ENDDO.
+
+    " Check if the number is Armstrong
+    IF lv_sum = lv_number.
+      WRITE: / lv_number.
+      lv_found = 'Y'. " Set flag to 'Yes' (Y)
+    ENDIF.
+
+    lv_number = lv_number + 1. " Increment the number
+
+    IF lv_number > p_end.
+      EXIT.
+    ENDIF.
+  ENDDO.
+
+  IF lv_found = 'N'.
+    WRITE: / .
+  ENDIF.
