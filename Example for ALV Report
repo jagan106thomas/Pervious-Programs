@@ -1,0 +1,697 @@
+*&---------------------------------------------------------------------*
+*& Report ZNAM_ALV_PRAC
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT znam_alv.
+
+
+
+TABLES: vbrk,vbrp.
+TYPE-POOLS: slis.
+
+TYPES: BEGIN OF ty_vbrk,
+         vbeln TYPE vbrk-vbeln,
+         fkdat TYPE vbrk-fkdat,
+         gjahr TYPE vbrk-gjahr,
+         vkorg TYPE vbrk-vkorg,
+         kunrg TYPE vbrk-kunrg,
+         belnr TYPE vbrk-belnr,
+       END OF ty_vbrk,
+
+       BEGIN OF ty_out_vbrk,
+         sel,
+         vbeln TYPE vbrk-vbeln,
+         fkdat TYPE vbrk-fkdat,
+         gjahr TYPE vbrk-gjahr,
+         vkorg TYPE vbrk-vkorg,
+         kunrg TYPE vbrk-kunrg,
+         belnr TYPE vbrk-belnr,
+       END OF ty_out_vbrk,
+
+
+       BEGIN OF ty_vbrp,
+         vbeln TYPE vbrp-vbeln,
+         posnr TYPE vbrp-posnr,
+         fkimg TYPE vbrp-fkimg,
+         vrkme TYPE vbrp-vrkme,
+         meins TYPE vbrp-meins,
+         smeng TYPE vbrp-smeng,
+         ntgew TYPE vbrp-ntgew,
+         brgew TYPE vbrp-brgew,
+         netwr TYPE vbrp-netwr,
+       END OF ty_vbrp,
+
+       BEGIN OF ty_out_vbrp,
+         sel,
+         vbeln TYPE vbrp-vbeln,
+         posnr TYPE vbrp-posnr,
+         fkimg TYPE vbrp-fkimg,
+         vrkme TYPE vbrp-vrkme,
+         meins TYPE vbrp-meins,
+         smeng TYPE vbrp-smeng,
+         ntgew TYPE vbrp-ntgew,
+         brgew TYPE vbrp-brgew,
+         netwr TYPE vbrp-netwr,
+       END OF ty_out_vbrp.
+
+
+DATA: wa_vbrk       TYPE ty_vbrk,
+      wa_vbrp       TYPE ty_vbrp,
+      it_vbrk       TYPE STANDARD TABLE OF ty_vbrk,
+      it_vbrp       TYPE STANDARD TABLE OF ty_vbrp,
+
+      wa_out_vbrk   TYPE ty_out_vbrk,
+      wa_out_vbrp   TYPE ty_out_vbrp,
+      it_out_vbrk   TYPE STANDARD TABLE OF ty_out_vbrk,
+      it_out_vbrp   TYPE STANDARD TABLE OF ty_out_vbrp,
+
+      wa_fcat_vbrk  TYPE slis_fieldcat_alv,
+      wa_fcat_vbrp  TYPE slis_fieldcat_alv,
+      it_fcat_vbrk  TYPE slis_t_fieldcat_alv,
+      it_fcat_vbrp  TYPE slis_t_fieldcat_alv,
+
+      wa_layout     TYPE slis_layout_alv,
+
+      wa_top_vbrk   TYPE slis_listheader,
+      wa_top_vbrp   TYPE slis_listheader,
+      it_top_vbrk   TYPE slis_t_listheader,
+      it_top_vbrp   TYPE slis_t_listheader,
+
+      wa_event_vbrk TYPE slis_alv_event,
+      wa_event_vbrp TYPE slis_alv_event,
+      it_event_vbrk TYPE slis_t_event,
+      it_event_vbrp TYPE slis_t_event,
+
+      r_ucomm       TYPE sy-ucomm,
+      rs_selfield   TYPE slis_selfield,
+      v_selfield    TYPE slis_selfield-value,
+      v_fkdat       TYPE vbrk-fkdat,
+      v_prog        TYPE sy-repid,
+      v_name        TYPE sy-uname.
+
+
+
+INITIALIZATION.
+  v_prog = sy-repid.
+  v_name = sy-uname.
+
+  SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+    SELECT-OPTIONS  s_vbeln FOR vbrk-vbeln OBLIGATORY  NO-EXTENSION NO INTERVALS.
+  SELECTION-SCREEN END OF BLOCK b1.
+
+START-OF-SELECTION.
+  PERFORM get_vbrk.
+  PERFORM fieldcat_vbrk.
+  PERFORM layout.
+  PERFORM event_vbrk.
+  PERFORM grid_vbrk.
+  PERFORM ucomm_vbrk USING r_ucomm
+                     CHANGING rs_selfield.
+
+
+TOP-OF-PAGE.
+  PERFORM top_vbrk.
+
+TOP-OF-PAGE DURING LINE-SELECTION.
+  PERFORM top_vbrp.
+*&---------------------------------------------------------------------*
+*& Form top_ekko
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM top_vbrk .
+  CLEAR wa_top_vbrk.
+  REFRESH it_top_vbrk.
+
+  DATA date TYPE char12.
+
+  CALL FUNCTION 'CONVERT_DATE_TO_EXTERNAL'
+    EXPORTING
+      date_internal            = sy-datum
+    IMPORTING
+      date_external            = date
+    EXCEPTIONS
+      date_internal_is_invalid = 1
+      OTHERS                   = 2.
+
+  wa_top_vbrk-typ = 'H'.
+  wa_top_vbrk-info = 'Billing Order Header'.
+  APPEND wa_top_vbrk TO it_top_vbrk.
+  CLEAR wa_top_vbrk.
+
+  wa_top_vbrk-typ = 'S'.
+  wa_top_vbrk-info = 'Report: '.
+  CONCATENATE wa_top_vbrk-info v_prog
+  INTO wa_top_vbrk-info.
+  APPEND wa_top_vbrk TO it_top_vbrk.
+  CLEAR wa_top_vbrk.
+
+  wa_top_vbrk-typ = 'S'.
+  wa_top_vbrk-info = 'User Name: '.
+  CONCATENATE wa_top_vbrk-info v_name
+  INTO wa_top_vbrk-info.
+  APPEND wa_top_vbrk TO it_top_vbrk.
+  CLEAR wa_top_vbrk.
+
+  wa_top_vbrk-typ = 'S'.
+  wa_top_vbrk-info = 'Date: '.
+  CONCATENATE wa_top_vbrk-info date
+  INTO wa_top_vbrk-info.
+  APPEND wa_top_vbrk TO it_top_vbrk.
+  CLEAR wa_top_vbrk.
+
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      it_list_commentary = it_top_vbrk
+*     I_LOGO             =
+*     I_END_OF_LIST_GRID =
+*     I_ALV_FORM         =
+    .
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*& Form get_ekko
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_vbrk .
+  REFRESH it_vbrk.
+  SELECT vbeln fkdat gjahr vkorg kunrg belnr
+    FROM vbrk INTO TABLE it_vbrk
+    WHERE vbeln IN s_vbeln.
+
+  IF sy-subrc = 0.
+    SORT it_vbrk BY vbeln.
+    REFRESH it_out_vbrk.
+
+    LOOP AT it_vbrk INTO wa_vbrk.
+      wa_out_vbrk-vbeln = wa_vbrk-vbeln.
+      wa_out_vbrk-fkdat = wa_vbrk-fkdat.
+      wa_out_vbrk-gjahr = wa_vbrk-gjahr.
+      wa_out_vbrk-vkorg = wa_vbrk-vkorg.
+      wa_out_vbrk-kunrg = wa_vbrk-kunrg.
+      wa_out_vbrk-belnr = wa_vbrk-belnr.
+      APPEND wa_out_vbrk TO it_out_vbrk.
+      CLEAR: wa_out_vbrk, wa_vbrk.
+    ENDLOOP.
+
+  ELSE.
+    MESSAGE 'Billing Order doesn''t exist' TYPE 'I'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form fieldcat_ekko
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM fieldcat_vbrk .
+  CLEAR wa_fcat_vbrk.
+  REFRESH it_fcat_vbrk.
+
+  IF it_out_vbrk IS NOT INITIAL.
+    DATA lv_col TYPE i VALUE 0.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrk-col_pos   = lv_col.
+    wa_fcat_vbrk-fieldname = 'VBELN'.
+    wa_fcat_vbrk-tabname   = 'IT_OUT_VBRK'.
+    wa_fcat_vbrk-seltext_l = 'BILLING Order NUMBER'.
+    APPEND wa_fcat_vbrk TO it_fcat_vbrk.
+    CLEAR wa_fcat_vbrk.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrk-col_pos   = lv_col.
+    wa_fcat_vbrk-fieldname = 'FKDAT'.
+    wa_fcat_vbrk-tabname   = 'IT_OUT_VBRK'.
+    wa_fcat_vbrk-seltext_l = 'BILLING DATE'.
+    APPEND wa_fcat_vbrk TO it_fcat_vbrk.
+    CLEAR wa_fcat_vbrk.
+
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrk-col_pos   = lv_col.
+    wa_fcat_vbrk-fieldname = 'GJAHR'.
+    wa_fcat_vbrk-tabname   = 'IT_OUT_VBRK'.
+    wa_fcat_vbrk-seltext_l = 'FISCAL YEAR'.
+    APPEND wa_fcat_vbrk TO it_fcat_vbrk.
+    CLEAR wa_fcat_vbrk.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrk-col_pos   = lv_col.
+    wa_fcat_vbrk-fieldname = 'VKORG'.
+    wa_fcat_vbrk-tabname   = 'IT_OUT_VBRK'.
+    wa_fcat_vbrk-seltext_l = 'SALES ORGANIZATION'.
+    APPEND wa_fcat_vbrk TO it_fcat_vbrk.
+    CLEAR wa_fcat_vbrk.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrk-col_pos   = lv_col.
+    wa_fcat_vbrk-fieldname = 'KUNRG'.
+    wa_fcat_vbrk-tabname   = 'IT_OUT_VBRK'.
+    wa_fcat_vbrk-seltext_l = 'PAYER'.
+    APPEND wa_fcat_vbrk TO it_fcat_vbrk.
+    CLEAR wa_fcat_vbrk.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrk-col_pos   = lv_col.
+    wa_fcat_vbrk-fieldname = 'BELNR'.
+    wa_fcat_vbrk-tabname   = 'IT_OUT_VBRK'.
+    wa_fcat_vbrk-seltext_l = 'ACCOUNTING DOCUMENT'.
+    APPEND wa_fcat_vbrk TO it_fcat_vbrk.
+    CLEAR wa_fcat_vbrk.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form layout
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM layout .
+  wa_layout-zebra = 'X'.
+  wa_layout-colwidth_optimize = 'X'.
+  wa_layout-box_fieldname = 'SEL'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form event_ekpo
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM event_vbrk .
+  REFRESH it_event_vbrk.
+
+  CALL FUNCTION 'REUSE_ALV_EVENTS_GET'
+*  EXPORTING
+*    I_LIST_TYPE           = 0
+    IMPORTING
+      et_events       = it_event_vbrk
+    EXCEPTIONS
+      list_type_wrong = 1
+      OTHERS          = 2.
+
+  IF it_event_vbrk IS NOT INITIAL.
+    CLEAR wa_event_vbrk.
+    READ TABLE it_event_vbrk INTO wa_event_vbrk
+    WITH KEY name = 'USER_COMMAND'.
+
+    IF sy-subrc = 0.
+      wa_event_vbrk-form = 'UCOMM_VBRK'.
+      MODIFY it_event_vbrk FROM wa_event_vbrk
+      INDEX sy-tabix TRANSPORTING form.
+    ENDIF.
+
+    CLEAR wa_event_vbrk.
+    READ TABLE it_event_vbrk INTO wa_event_vbrk
+    WITH KEY name = 'TOP_OF_PAGE'.
+
+    IF sy-subrc = 0.
+      wa_event_vbrk-form = 'TOP_VBRK'.
+      MODIFY it_event_vbrk FROM wa_event_vbrk
+      INDEX sy-tabix TRANSPORTING form.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form ucomm_ekko
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> R_UCOMM
+*&      <-- RS_SELFIELD
+*&---------------------------------------------------------------------*
+FORM ucomm_vbrk USING    r_ucomm_vbrk    TYPE sy-ucomm
+                CHANGING rs_selfield_vbrk TYPE slis_selfield.
+
+  CASE r_ucomm_vbrk.
+    WHEN '&IC1'.
+      IF rs_selfield_vbrk-fieldname = 'FKDAT'.
+        CLEAR v_selfield.
+        v_selfield = rs_selfield_vbrk-value.
+        PERFORM conversion_po.
+        PERFORM get_vbrp.
+        PERFORM fieldcat_vbrp.
+        PERFORM layout.
+        PERFORM event_vbrp.
+        PERFORM grid_vbrp.
+
+      ELSE.
+        MESSAGE 'Invalid Field' TYPE 'S'.
+      ENDIF.
+
+      IF rs_selfield_vbrk-fieldname = 'VBELN'.
+
+        SET PARAMETER ID 'AUN' FIELD s_vbeln.
+        CALL TRANSACTION 'VF03'.
+
+      ELSE.
+        MESSAGE 'Invalid Field' TYPE 'S'.
+      ENDIF.
+
+      IF rs_selfield_vbrk-fieldname = 'KUNRG'.
+
+        CALL FUNCTION ''.
+
+      ELSE.
+        MESSAGE 'Invalid Field' TYPE 'S'.
+      ENDIF.
+
+
+  ENDCASE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form grid_ekpo
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM grid_VBRP .
+
+  IF    it_out_vbrp IS NOT INITIAL
+    AND it_fcat_vbrp IS NOT INITIAL.
+
+    CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+*       I_INTERFACE_CHECK       = ' '
+*       I_BYPASSING_BUFFER      =
+*       I_BUFFER_ACTIVE         = ' '
+        i_callback_program      = v_prog
+*       i_callback_pf_status_set       = ' '
+        i_callback_user_command = 'UCOMM_VBRP'
+*       I_STRUCTURE_NAME        =
+        is_layout               = wa_layout
+        it_fieldcat             = it_fcat_vbrp
+*       IT_EXCLUDING            =
+*       IT_SPECIAL_GROUPS       =
+*       IT_SORT                 =
+*       IT_FILTER               =
+*       IS_SEL_HIDE             =
+*       I_DEFAULT               = 'X'
+*       I_SAVE                  = ' '
+*       IS_VARIANT              =
+        it_events               = it_event_vbrp
+*       IT_EVENT_EXIT           =
+*       IS_PRINT                =
+*       IS_REPREP_ID            =
+*       I_SCREEN_START_COLUMN   = 0
+*       I_SCREEN_START_LINE     = 0
+*       I_SCREEN_END_COLUMN     = 0
+*       I_SCREEN_END_LINE       = 0
+*       IR_SALV_LIST_ADAPTER    =
+*       IT_EXCEPT_QINFO         =
+*       I_SUPPRESS_EMPTY_DATA   = ABAP_FALSE
+*    IMPORTING
+*       E_EXIT_CAUSED_BY_CALLER =
+*       ES_EXIT_CAUSED_BY_USER  =
+      TABLES
+        t_outtab                = it_out_vbrp
+      EXCEPTIONS
+        program_error           = 1
+        OTHERS                  = 2.
+
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form top_ekpo
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM top_VBRP .
+  CLEAR wa_top_vbrp.
+  REFRESH it_top_vbrp.
+
+  wa_top_vbrp-typ = 'H'.
+  wa_top_vbrp-info = 'Billing Order Item wise Display'.
+  APPEND wa_top_vbrp TO it_top_vbrp.
+  CLEAR wa_top_vbrp.
+
+  CALL FUNCTION 'REUSE_ALV_COMMENTARY_WRITE'
+    EXPORTING
+      it_list_commentary = it_top_vbrp
+*     I_LOGO             =
+*     I_END_OF_LIST_GRID =
+*     I_ALV_FORM         =
+    .
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form conversion_po
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM conversion_po .
+  CLEAR s_vbeln.
+
+  CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+    EXPORTING
+      input  = v_selfield
+    IMPORTING
+      output = s_vbeln.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form get_ekpo
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_vbrp .
+  IF s_vbeln IS NOT INITIAL.
+    REFRESH IT_vbrp.
+    SELECT vbeln,posnr, fkimg, vrkme, meins, smeng, ntgew, brgew, netwr
+      FROM vbrp INTO TABLE @it_vbrp
+      WHERE vbeln IN  @s_vbeln.
+
+    IF sy-subrc = 0.
+      SORT it_vbrp BY posnr.
+      REFRESH it_out_vbrp.
+
+      LOOP AT it_vbrp INTO wa_vbrp.
+        AT NEW vbeln.
+          wa_out_vbrp-vbeln = wa_vbrp-vbeln.
+        ENDAT.
+        wa_out_vbrp-posnr = wa_vbrp-posnr.
+        wa_out_vbrp-fkimg = wa_vbrp-fkimg.
+        wa_out_vbrp-vrkme = wa_vbrp-vrkme.
+        wa_out_vbrp-meins = wa_vbrp-meins.
+        wa_out_vbrp-smeng = wa_vbrp-smeng.
+        wa_out_vbrp-ntgew = wa_vbrp-ntgew.
+        wa_out_vbrp-brgew = wa_vbrp-brgew.
+        wa_out_vbrp-netwr = wa_vbrp-netwr.
+        APPEND wa_out_vbrp TO it_out_vbrp.
+        CLEAR: wa_out_vbrp, wa_vbrp.
+      ENDLOOP.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form fieldcat_ekpo
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM fieldcat_vbrp .
+  CLEAR wa_fcat_vbrp.
+  REFRESH it_fcat_vbrp.
+
+  IF it_out_vbrp IS NOT INITIAL.
+    DATA lv_col TYPE i VALUE 0.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'VBELN'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'BILLING Order NUMBER'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'POSNR'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'Billing item'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'FKIMG'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'ACTUAL BILLED QUANTITY'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'VRKME'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'SALES UNIT'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'MEINS'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'BASE UNIT OF MEASURE'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'SMENG'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'Billing quantity'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'NTGEW'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'NET WEIGHT'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'BRGEW'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'GROSS WEIGHT'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+
+
+    lv_col                 = 1 + lv_col.
+    wa_fcat_vbrp-col_pos   = lv_col.
+    wa_fcat_vbrp-fieldname = 'NETWR'.
+    wa_fcat_vbrp-tabname   = 'IT_OUT_VBRP'.
+    wa_fcat_vbrp-seltext_l = 'NET VALUE OF BILLING QUANTITY'.
+    APPEND wa_fcat_vbrp TO it_fcat_vbrp.
+    CLEAR wa_fcat_vbrp.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form event_ekpo
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM event_vbrp .
+  REFRESH it_event_vbrp.
+
+  CALL FUNCTION 'REUSE_ALV_EVENTS_GET'
+* EXPORTING
+*   I_LIST_TYPE           = 0
+    IMPORTING
+      et_events       = it_event_vbrp
+    EXCEPTIONS
+      list_type_wrong = 1
+      OTHERS          = 2.
+
+  IF it_event_vbrp IS NOT INITIAL.
+    CLEAR wa_event_vbrp.
+    READ TABLE it_event_vbrp INTO wa_event_vbrp
+    WITH KEY name = 'USER_COMMAND'.
+
+    IF sy-subrc = 0.
+      wa_event_vbrp-form = 'UCOMM_VBRP'.
+      MODIFY it_event_vbrp FROM wa_event_vbrp
+      INDEX sy-tabix TRANSPORTING form.
+    ENDIF.
+
+    CLEAR wa_event_vbrp.
+    READ TABLE it_event_vbrp INTO wa_event_vbrp
+    WITH KEY name = 'TOP_OF_PAGE'.
+
+    IF sy-subrc = 0.
+      wa_event_vbrp-form = 'TOP_VBRP'.
+      MODIFY it_event_vbrp FROM wa_event_vbrp
+      INDEX sy-tabix TRANSPORTING form.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form grid_ekko
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM grid_vbrk .
+  IF    it_out_vbrk IS NOT INITIAL
+      AND it_fcat_vbrk IS NOT INITIAL.
+
+    CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+      EXPORTING
+*       I_INTERFACE_CHECK       = ' '
+*       I_BYPASSING_BUFFER      =
+*       I_BUFFER_ACTIVE         = ' '
+        i_callback_program      = v_prog
+*       I_CALLBACK_PF_STATUS_SET       = ' '
+        i_callback_user_command = 'UCOMM_VBRK'
+*       I_STRUCTURE_NAME        =
+        is_layout               = wa_layout
+        it_fieldcat             = it_fcat_vbrk
+*       IT_EXCLUDING            =
+*       IT_SPECIAL_GROUPS       =
+*       IT_SORT                 =
+*       IT_FILTER               =
+*       IS_SEL_HIDE             =
+*       I_DEFAULT               = 'X'
+*       I_SAVE                  = ' '
+*       IS_VARIANT              =
+        it_events               = it_event_vbrk
+*       IT_EVENT_EXIT           =
+*       IS_PRINT                =
+*       IS_REPREP_ID            =
+*       I_SCREEN_START_COLUMN   = 0
+*       I_SCREEN_START_LINE     = 0
+*       I_SCREEN_END_COLUMN     = 0
+*       I_SCREEN_END_LINE       = 0
+*       IR_SALV_LIST_ADAPTER    =
+*       IT_EXCEPT_QINFO         =
+*       I_SUPPRESS_EMPTY_DATA   = ABAP_FALSE
+*    IMPORTING
+*       E_EXIT_CAUSED_BY_CALLER =
+*       ES_EXIT_CAUSED_BY_USER  =
+      TABLES
+        t_outtab                = it_out_vbrk
+      EXCEPTIONS
+        program_error           = 1
+        OTHERS                  = 2.
+  ENDIF.
+ENDFORM.
