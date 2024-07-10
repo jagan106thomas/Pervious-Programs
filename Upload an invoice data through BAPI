@@ -1,0 +1,112 @@
+*&---------------------------------------------------------------------*
+*& Report ZSEQ9
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zseq9.
+
+TYPES: BEGIN OF ty_header,
+         invoice_ind  TYPE bapi_incinv_create_header-invoice_ind,
+         doc_date     TYPE bapi_incinv_create_header-doc_date,
+         pstng_date   TYPE bapi_incinv_create_header-pstng_date,
+         comp_code    TYPE bapi_incinv_create_header-COMP_CODE,
+         gross_amount TYPE bapi_incinv_create_header-gross_amount,
+         currency     TYPE bapi_incinv_create_header-currency,
+         bline_date   TYPE bapi_incinv_create_header-bline_date,
+       END OF ty_header.
+
+TYPES:BEGIN OF ty_items,
+        header           TYPE ty_header,
+        invoice_doc_item TYPE bapi_incinv_create_item-invoice_doc_item,
+        po_number        TYPE bapi_incinv_create_item-po_number,
+        po_item          TYPE bapi_incinv_create_item-po_item,
+        tax_code         TYPE bapi_incinv_create_item-tax_code,
+        item_amount      TYPE bapi_incinv_create_item-item_amount,
+        quantity         TYPE bapi_incinv_create_item-quantity,
+        po_unit          TYPE bapi_incinv_create_item-po_unit,
+        item_text        TYPE bapi_incinv_create_item-item_text,
+      END OF ty_items.
+
+
+DATA: lt_file_content    TYPE TABLE OF string,
+      lt_invoice_data    TYPE TABLE OF ty_items,
+      ls_invoice_data    TYPE ty_items,
+*      lv_header_data  TYPE TABLE OF  ty_header,
+      lt_invoice_header  TYPE TABLE OF ty_header,
+*      lt_invoice_items type table of ty_items,
+      lv_file_path       TYPE string,
+      lt_file_content_wa TYPE   string.
+
+lv_file_path = '/tmp/file.xlsx.'.
+
+*    Read File from AL11 function module
+OPEN DATASET lv_file_path FOR INPUT IN TEXT MODE ENCODING DEFAULT.   "Open the dataset for reading
+
+IF sy-subrc = 0.
+*  LOOP AT lt_file_content.
+  DO 2 TIMES.
+    READ DATASET lv_file_path INTO lt_file_content_wa.
+    APPEND lt_file_content_wa TO lt_file_content.
+    CLEAR lt_file_content_wa.
+  ENDDO.
+  CLOSE DATASET lv_file_path.    "Close the dataset after reading
+ENDIF.
+BREAK-POINT.
+IF sy-subrc = 0.
+  LOOP AT lt_file_content INTO DATA(lv_file).
+
+    CLEAR ls_invoice_data.
+    CLEAR lt_invoice_header.
+    ls_invoice_data-header-invoice_ind = lv_file+0(8).
+    ls_invoice_data-header-doc_date = lv_file+10(8).
+    ls_invoice_data-header-pstng_date = lv_file+13(8).
+    ls_invoice_data-header-comp_code = lv_file+20(8).
+    ls_invoice_data-header-gross_amount = lv_file+25(8).
+    ls_invoice_data-header-currency = lv_file+30(8)  .
+    ls_invoice_data-header-bline_date = lv_file+35(8).
+    APPEND ls_invoice_data TO lt_invoice_data.
+
+    CLEAR lt_invoice_header.
+    ls_invoice_data-header = ''.
+    ls_invoice_data-invoice_doc_item = lv_file.
+    ls_invoice_data-po_number = lv_file  .
+    ls_invoice_data-po_item = lv_file .
+    ls_invoice_data-tax_code = lv_file .
+    ls_invoice_data-item_amount = lv_file.
+    ls_invoice_data-quantity  = lv_file.
+    ls_invoice_data-po_unit   = lv_file .
+    ls_invoice_data-item_text   = lv_file.
+    APPEND ls_invoice_data-header TO lt_invoice_header.
+    APPEND ls_invoice_data TO lt_invoice_data.
+*  ENDIF.
+  ENDLOOP.
+  DATA: it_ret LIKE bapiret2 OCCURS 0 WITH HEADER LINE.
+  DATA: g_invno LIKE bapi_incinv_fld-inv_doc_no.
+  CALL FUNCTION 'BAPI_INCOMINGINVOICE_CREATE'
+    EXPORTING
+      headerdata       = ls_invoice_data
+*     ADDRESSDATA      =
+    IMPORTING
+      invoicedocnumber = g_invno
+*     FISCALYEAR       =
+    TABLES
+      itemdata         = lt_invoice_data
+*     ACCOUNTINGDATA   =
+      return           = it_ret
+*     NFMETALLITMS     =
+*     ASSETDATA        =
+    .
+  IF g_invno IS NOT INITIAL.
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+*   EXPORTING
+*     WAIT          =
+*   IMPORTING
+*     RETURN        =
+      .
+  ENDIF.
+  WRITE:/1 g_invno. " g_fyear.
+
+  LOOP AT it_ret.
+    WRITE:/1 it_ret-message.
+  ENDLOOP.
+ENDIF.
