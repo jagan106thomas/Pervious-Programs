@@ -1,0 +1,137 @@
+report ZMM_CALLTRANSACTION
+       no standard page heading line-size 255.
+
+
+Types : begin of ty_record,
+* data element: MBRSH
+        MBRSH_001(030),
+* data element: MTART
+        MTART_002(030),
+* data element: XFELD
+*        KZSEL_01_003(001),
+** data element: XFELD
+*        KZSEL_02_004(001),
+* data element: MAKTX
+        MAKTX_005(040),
+* data element: MEINS
+        MEINS_006(003),
+* data element: MATKL
+        MATKL_007(009),
+* data element: MTPOS_MARA
+*        MTPOS_MARA_008(004),
+* data element: MAKTX
+        MAKTX_009(040),
+      end of ty_record.
+
+*****BEGIN OF 09.05.2021:DEFECT NO : 12345
+      DATA : IT_DATA TYPE TABLE OF TY_RECORD,
+             WA_DATA TYPE TY_RECORD.
+      data : t_bdcdata like TABLE OF bdcdata,
+             w_bdcdata like LINE OF t_bdcdata.
+      TYPES : FS_STRUC(4096) TYPE C OCCURS 0.
+      DATA : WA_STRUC TYPE  FS_STRUC.
+
+      DATA : T_MSG TYPE TABLE OF BDCMSGCOLL,
+             W_MSG TYPE BDCMSGCOLL.
+
+***********END OD LINE ON 09.05.2021:DEFECT NO : 12345
+
+      SELECTION-SCREEN : BEGIN Of block b1.
+      parameters : P_file type rlgrap-filename.
+      SELECTION-SCREEN : end of block b1.
+
+     at SELECTION-SCREEN on VALUE-REQUEST FOR p_file.
+
+       CALL FUNCTION 'F4_FILENAME'
+        EXPORTING
+          PROGRAM_NAME        = SYST-CPROG
+          DYNPRO_NUMBER       = SYST-DYNNR
+          FIELD_NAME          = ' '
+        IMPORTING
+          FILE_NAME           = p_file
+                 .
+
+
+         CALL FUNCTION 'TEXT_CONVERT_XLS_TO_SAP'
+           EXPORTING
+              I_FIELD_SEPERATOR          =  'X'
+              I_LINE_HEADER              =  'X'
+             i_tab_raw_data             =    WA_STRUC
+             i_filename                 =    P_FILE
+           TABLES
+             i_tab_converted_data       =  IT_DATA
+          EXCEPTIONS
+            CONVERSION_FAILED          = 1
+             OTHERS                     = 2
+                   .
+         IF sy-subrc <> 0.
+* Implement suitable error handling here
+         ENDIF.
+
+
+LOOP AT IT_DATA INTO WA_DATA.
+
+perform bdc_dynpro      using 'SAPLMGMM' '0060'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'RMMG1-MTART'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=ENTR'.
+perform bdc_field       using 'RMMG1-MBRSH'
+                              WA_DATA-MBRSH_001.
+perform bdc_field       using 'RMMG1-MTART'
+                              WA_DATA-MTART_002.
+perform bdc_dynpro      using 'SAPLMGMM' '0070'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'MSICHTAUSW-DYTXT(02)'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=ENTR'.
+perform bdc_field       using 'MSICHTAUSW-KZSEL(01)'
+                               'X' ." WA_DATA-KZSEL_01_003.
+perform bdc_field       using 'MSICHTAUSW-KZSEL(02)'
+                               'X'."WA_DATA-KZSEL_02_004.
+perform bdc_dynpro      using 'SAPLMGMM' '4004'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '/00'.
+perform bdc_field       using 'MAKT-MAKTX'
+                              WA_DATA-MAKTX_005.
+perform bdc_field       using 'BDC_CURSOR'
+                              'MARA-MATKL'.
+perform bdc_field       using 'MARA-MEINS'
+                              WA_DATA-MEINS_006.
+perform bdc_field       using 'MARA-MATKL'
+                              WA_DATA-MATKL_007.
+*perform bdc_field       using 'MARA-MTPOS_MARA'
+*                              WA_DATA-MTPOS_MARA_008.
+perform bdc_dynpro      using 'SAPLMGMM' '4004'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '/00'.
+perform bdc_field       using 'BDC_CURSOR'
+                              'MAKT-MAKTX'.
+perform bdc_field       using 'MAKT-MAKTX'
+                              WA_DATA-MAKTX_009.
+perform bdc_dynpro      using 'SAPLSPO1' '0300'.
+perform bdc_field       using 'BDC_OKCODE'
+                              '=YES'.
+
+ CAll TRANSACTION 'MM01' USING T_BDCDATA MODE 'A' UPDATE 'S' MESSAGES INTO T_MSG.
+
+
+ENDLOOP.
+
+
+
+FORM BDC_DYNPRO USING PROGRAM DYNPRO.
+  CLEAR  W_BDCDATA.
+  W_BDCDATA-PROGRAM = PROGRAM.
+  W_BDCDATA-DYNPRO = DYNPRO.
+  W_BDCDATA-DYNBEGIN = 'X'.
+  APPEND W_BDCDATA TO T_BDCDATA.
+ENDFORM.
+
+FORM BDC_FIELD USING FNAM FVAL.
+  CLEAR  : W_BDCDATA.
+  W_BDCDATA-FNAM = FNAM.
+  W_BDCDATA-FVAL = FVAL.
+  APPEND W_BDCDATA TO T_BDCDATA.
+
+ENDFORM.
