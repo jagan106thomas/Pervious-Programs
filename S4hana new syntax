@@ -1,0 +1,24 @@
+*&---------------------------------------------------------------------*
+*& Report ZSATISH_PERFORMANCE_1
+*&---------------------------------------------------------------------*
+REPORT zsatish_performance_1.
+
+TYPES: BEGIN OF ty_mara,
+         matnr TYPE matnr,
+         mtart TYPE mtart,
+         matkl TYPE matkl,
+       END OF ty_mara.
+
+TYPES  ty TYPE TABLE OF ty_mara WITH EMPTY KEY.
+
+DATA(ls_mara) = VALUE ty( ( matnr = '120' mtart = 'FERT' )
+( matnr = '121' mtart = 'FERT' )
+( matnr = '122' mtart = 'ROH' )
+( matnr = '123' mtart = 'FERT' ) ).
+
+SELECT matnr, mtart, matkl FROM mara INTO TABLE @DATA(it_mara) UP TO 20 ROWS.
+
+ls_mara = VALUE ty( BASE ls_mara  FOR wa IN it_mara  WHERE ( mtart = 'ROH' )
+( matnr = wa-matnr mtart = wa-mtart matkl = wa-matkl ) ).
+
+cl_demo_output=>display( ls_mara ).
