@@ -1,0 +1,51 @@
+*&---------------------------------------------------------------------*
+*& Report ZUPLOAD_DATA1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZUPLOAD_DATA1.
+ TYPES: BEGIN OF ty_material,
+         netwr TYPE netwr,
+         ntgew TYPE ntgew,
+         brgew TYPE brgew,
+       END OF ty_material.
+
+DATA: tb_material TYPE TABLE OF ty_material.
+
+SELECTION-SCREEN: BEGIN OF BLOCK b1 WITH FRAME.
+  PARAMETERS: p_fname TYPE string.
+SELECTION-SCREEN: END OF BLOCK b1.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_fname.
+  DATA: iftab   TYPE filetable,
+        ircount TYPE i.
+
+  TRY.
+      CALL METHOD cl_gui_frontend_services=>file_open_dialog
+        CHANGING
+          file_table              = iftab
+          rc                      = ircount.
+    CATCH cx_root INTO DATA(lx_root).
+      " Handle exceptions here
+      CASE lx_root->get_text( ).
+        WHEN '1'.
+          " File open dialog failed
+          " Implement suitable error handling here
+        WHEN '2'.
+          " Control error
+          " Implement suitable error handling here
+        WHEN '3'.
+          " No GUI error
+          " Implement suitable error handling here
+        WHEN '4'.
+          " Not supported by GUI
+          " Implement suitable error handling here
+        WHEN OTHERS.
+          " Other errors
+          " Implement suitable error handling here
+      ENDCASE.
+  ENDTRY.
+
+  IF sy-subrc <> 0.
+    " Implement suitable error handling here if needed
+  ENDIF.
