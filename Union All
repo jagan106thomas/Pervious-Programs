@@ -1,0 +1,37 @@
+*&---------------------------------------------------------------------*
+*& Report ZSATISH_HANA8
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zsatish_hana8.
+
+*START-OF-SELECTION.
+*  SELECT vbeln,
+*    posnr,
+*    matnr,
+*    MATKL
+*    FROM vbap WHERE matkl = 'L001'
+*
+*    UNION ALL
+*
+*    SELECT vbeln,
+*    posnr,
+*    matnr,
+*    MATKL
+*    FROM vbap WHERE matkl = '7000'
+*
+*    INTO TABLE @DATA(it_vbap).
+*
+*  BREAK-POINT.
+
+  DATA WA_DATA TYPE YJAGA_SALES_DETAILS_TT.
+
+  DATA(OBJ_NAME) = NEW ZCLASS_SALES_ORDER_DETAILS( ).
+
+  PARAMETERS:P_VBELN TYPE VBELN_VA.
+
+  obj_name->get_data(
+  EXPORTING
+    PVBELN = conv #( P_VBELN )
+  IMPORTING
+    LT_DATA = WA_DATA ).
